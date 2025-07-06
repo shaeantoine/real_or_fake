@@ -16,6 +16,11 @@ train_data = "data/train_df.csv"
 train_df = pd.read_csv(train_data)
 train_df, val_df = train_test_split(train_df, test_size=0.2, random_state=1)
 
+print("Number of file_1 being real in training set:", sum(train_df["real_file_label"] == 1))
+print("Number of file_2 being real in training set:", sum(train_df["real_file_label"] == 2))
+print("Number of file_1 being real in validation set:", sum(val_df["real_file_label"] == 1))
+print("Number of file_2 being real in validation set:", sum(val_df["real_file_label"] == 2))
+
 # Initialize Model/ Architecture
 model_name = "roberta-base"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -29,12 +34,12 @@ model = SiameseNetwork()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
-optimizer = AdamW(model.parameters(), lr=2e-5)
+optimizer = AdamW(model.parameters(), lr=1e-5)
 loss_fn = nn.BCEWithLogitsLoss()
 
 # Training Loop 
 best_val_acc = 0
-patience = 7
+patience = 10
 epochs_no_improve = 0
 num_epochs = 10
 
@@ -104,6 +109,8 @@ for epoch in range(num_epochs):
     val_acc = val_correct / val_total
     avg_val_loss = val_loss / len(val_loader)
     val_f1 = f1_score(val_labels, val_preds)
+    print(f"Predicted labels of the validation set:\n{val_preds}\n")
+    print(f"Actual labels of the validation set: \n{val_labels}\n")
 
     print(f"Val   Loss: {avg_val_loss:.4f} | Acc: {val_acc:.4f} | F1: {val_f1:.4f}")
 
