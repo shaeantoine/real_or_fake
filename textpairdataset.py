@@ -1,3 +1,4 @@
+import torch
 from torch.utils.data import Dataset
 
 class TextPairDataset(Dataset):
@@ -13,7 +14,7 @@ class TextPairDataset(Dataset):
         row = self.df.iloc[idx]
         text1, text2 = str(row['file_1']), str(row['file_2'])
         # Convert [1,2] system to [0,1] for optimizers
-        label = 0 if row['real_file_label'] == 1 else 1
+        label = 1.0 if row['real_file_label'] == 2 else 0.0
 
         enc1 = self.tokenizer(text1, truncation=True, padding='max_length', max_length=self.max_length, return_tensors="pt")
         enc2 = self.tokenizer(text2, truncation=True, padding='max_length', max_length=self.max_length, return_tensors="pt")
@@ -23,5 +24,4 @@ class TextPairDataset(Dataset):
             "attention_mask_1": enc1["attention_mask"].squeeze(),
             "input_ids_2": enc2["input_ids"].squeeze(),
             "attention_mask_2": enc2["attention_mask"].squeeze(),
-            "label": label
-        }
+            "label": torch.tensor(label)        }

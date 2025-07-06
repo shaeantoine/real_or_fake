@@ -4,7 +4,8 @@ import torch.nn as nn
 from torch.optim import AdamW
 from transformers import AutoTokenizer
 from torch.utils.data import DataLoader
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, f1_score
+from sklearn.model_selection import train_test_split
 
 # Internal classes
 from siamesenetwork import SiameseNetwork
@@ -13,13 +14,16 @@ from textpairdataset import TextPairDataset
 # Load in training data
 train_data = "data/train_df.csv"
 train_df = pd.read_csv(train_data)
+train_df, val_df = train_test_split(train_df, test_size=0.1, random_state=42)
 
 # Initialize Model/ Architecture
 model_name = "roberta-base"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 train_dataset = TextPairDataset(train_df, tokenizer)
+val_dataset = TextPairDataset(val_df, tokenizer)
 train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=8, shuffle=True)
 
 model = SiameseNetwork()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -29,31 +33,87 @@ optimizer = AdamW(model.parameters(), lr=2e-5)
 loss_fn = nn.BCEWithLogitsLoss()
 
 # Training Loop 
-for epoch in range(3):
+best_val_acc = 0
+patience = 3
+epochs_no_improve = 0
+num_epochs = 10
+
+for epoch in range(num_epochs):
+    print(f"\nEpoch {epoch+1}/{num_epochs}")
+
     model.train()
-    total_loss = 0
-    preds, labels = [], []
+    train_loss = 0
+    correct = 0
+    total = 0
+    all_preds=[]
+    all_labels=[]
 
     for batch in train_loader:
-        optimizer.zero_grad()
         input_ids_1 = batch["input_ids_1"].to(device)
         attention_mask_1 = batch["attention_mask_1"].to(device)
         input_ids_2 = batch["input_ids_2"].to(device)
         attention_mask_2 = batch["attention_mask_2"].to(device)
-        targets = batch["label"].float().to(device)
+        labels = batch["label"].float().to(device)
 
+        optimizer.zero_grad()
         logits = model(input_ids_1, attention_mask_1, input_ids_2, attention_mask_2)
-        loss = loss_fn(logits, targets)
+        loss = loss_fn(logits, labels)
         loss.backward()
         optimizer.step()
 
-        total_loss += loss.item()
-        preds += (torch.sigmoid(logits) > 0.5).cpu().numpy().tolist()
-        labels += targets.cpu().numpy().tolist()
+        train_loss += loss.item()
+        preds = (torch.sigmoid(logits) > 0.5).long()
+        correct += (preds == labels.long()).sum().item()
+        total += labels.size(0)
 
-    acc = accuracy_score(labels, preds)
-    print(f"Epoch {epoch + 1}, Loss: {total_loss:.4f}, Accuracy: {acc:.4f}")
+        all_preds += preds.cpu().numpy().tolist()
+        all_labels += labels.cpu().numpy().tolist()
 
-# Save Model
-model_path = "models/trained_model.zip"
-torch.save(model.state_dict(), model_path)
+    train_acc = correct / total
+    avg_train_loss = train_loss / len(train_loader)
+    train_f1 = f1_score(all_labels, all_preds)
+
+    print(f"Train Loss: {avg_train_loss:.4f} | Acc: {train_acc:.4f} | F1: {train_f1:.4f}")
+
+    model.eval()
+    val_loss = 0
+    val_correct = 0
+    val_total = 0
+    val_preds = []
+    val_labels = []
+    
+    with torch.no_grad():
+        for batch in val_loader:
+            input_ids_1 = batch["input_ids_1"].to(device)
+            attention_mask_1 = batch["attention_mask_1"].to(device)
+            input_ids_2 = batch["input_ids_2"].to(device)
+            attention_mask_2 = batch["attention_mask_2"].to(device)
+            labels = batch["label"].float().to(device)
+
+            outputs = model(input_ids_1, attention_mask_1, input_ids_2, attention_mask_2)
+            loss = loss_fn(outputs, labels)
+            val_loss += loss.item()
+
+            preds = (torch.sigmoid(outputs) > 0.5).long()
+            val_correct += (preds == labels.long()).sum().item()
+            val_total += labels.size(0)
+
+            val_preds += preds.cpu().numpy().tolist()
+            val_labels += labels.cpu().numpy().tolist()
+
+    val_acc = val_correct / val_total
+    avg_val_loss = val_loss / len(val_loader)
+    val_f1 = f1_score(val_labels, val_preds)
+
+    print(f"Val   Loss: {avg_val_loss:.4f} | Acc: {val_acc:.4f} | F1: {val_f1:.4f}")
+
+    # Saving the model, checking for no improvement after patience
+    if val_acc > best_val_acc:
+        best_val_acc = val_acc
+        epochs_no_improve = 0
+        torch.save(model.state_dict(), "models/siamese_network.pt")
+    else:
+        epochs_no_improve += 1
+        if epochs_no_improve >= patience:
+            print("Early stopping triggered.")
+            break

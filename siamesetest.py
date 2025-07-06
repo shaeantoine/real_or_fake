@@ -11,9 +11,10 @@ test_df = pd.read_csv(test_file)
 
 # Load Model
 model = SiameseNetwork()
-device = "cpu"
-model_path = "models/trained_model.zip"
-model.load_state_dict(torch.load(model_path, weights_only=True))
+device = "cuda" if torch.cuda.is_available() else "cpu"
+model_path = "models/siamese_network.pt"
+model.load_state_dict(torch.load(model_path, map_location=torch.device(device)))
+model.to(device)
 model.eval()
 
 # Initialize Model/ Architecture
