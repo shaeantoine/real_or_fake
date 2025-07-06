@@ -7,8 +7,9 @@ class SiameseNetwork(nn.Module):
         super().__init__()
         self.encoder = AutoModel.from_pretrained(model_name)
         self.dropout = nn.Dropout(dropout)
+        self.norm = nn.LayerNorm(self.encoder.config.hidden_size)
         self.classifier = nn.Sequential(
-            nn.Linear(2 * self.encoder.config.hidden_size, 256),
+            nn.Linear(4 * self.encoder.config.hidden_size, 256),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(256, 1)
@@ -18,6 +19,11 @@ class SiameseNetwork(nn.Module):
         rep1 = self.encoder(input_ids=input_ids_1, attention_mask=attention_mask_1).last_hidden_state[:, 0, :]
         rep2 = self.encoder(input_ids=input_ids_2, attention_mask=attention_mask_2).last_hidden_state[:, 0, :]
 
-        combined = torch.cat([rep1, rep2], dim=1)
+        rep1 = self.norm(rep1)
+        rep2 = self.norm(rep2)
+        diff = torch.abs(rep1 - rep2)
+        prod = rep1*rep2
+
+        combined = torch.cat([rep1, rep2, diff, prod], dim=1)
         out = self.classifier(self.dropout(combined))
         return out.squeeze(1)

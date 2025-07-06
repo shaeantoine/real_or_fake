@@ -44,7 +44,7 @@ with torch.no_grad():
         )
 
         prob = torch.sigmoid(logits).item()
-        prediction = "2" if prob > 0.5 else "1"
+        prediction = "2" if prob > 0.489 else "1"
         predictions.append({"id": idx, "real_text_id": prediction})
 
 # Save Predictions to CSV

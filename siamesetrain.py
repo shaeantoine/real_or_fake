@@ -34,8 +34,13 @@ model = SiameseNetwork()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
-optimizer = AdamW(model.parameters(), lr=1e-5)
-loss_fn = nn.BCEWithLogitsLoss()
+optimizer = AdamW([
+    {"params": model.encoder.parameters(), "lr": 1e-5},
+    {"params": model.classifier.parameters(), "lr": 1e-3},
+])
+class_prop = sum(train_df["real_file_label"] == 1)/sum(train_df["real_file_label"] == 2)
+pos_weight = torch.tensor([class_prop], dtype=torch.float).to(device)
+loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 
 # Training Loop 
 best_val_acc = 0
@@ -109,10 +114,10 @@ for epoch in range(num_epochs):
     val_acc = val_correct / val_total
     avg_val_loss = val_loss / len(val_loader)
     val_f1 = f1_score(val_labels, val_preds)
-    print(f"Predicted labels of the validation set:\n{val_preds}\n")
-    print(f"Actual labels of the validation set: \n{val_labels}\n")
 
     print(f"Val   Loss: {avg_val_loss:.4f} | Acc: {val_acc:.4f} | F1: {val_f1:.4f}")
+    print(f"\nPredicted labels of the validation set:\n{val_preds}\n")
+    print(f"Actual labels of the validation set: \n{val_labels}\n")
 
     # Saving the model, checking for no improvement after patience
     if val_acc > best_val_acc:
