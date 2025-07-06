@@ -3,7 +3,7 @@ import torch.nn as nn
 from transformers import AutoModel
 
 class SiameseNetwork(nn.Module):
-    def __init__(self, model_name="roberta-base", dropout=0.1):
+    def __init__(self, model_name="roberta-large", dropout=0.1):
         super().__init__()
         self.encoder = AutoModel.from_pretrained(model_name)
         self.dropout = nn.Dropout(dropout)

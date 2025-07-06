@@ -14,10 +14,10 @@ from textpairdataset import TextPairDataset
 # Load in training data
 train_data = "data/train_df.csv"
 train_df = pd.read_csv(train_data)
-train_df, val_df = train_test_split(train_df, test_size=0.1, random_state=42)
+train_df, val_df = train_test_split(train_df, test_size=0.2, random_state=1)
 
 # Initialize Model/ Architecture
-model_name = "roberta-base"
+model_name = "roberta-large"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 train_dataset = TextPairDataset(train_df, tokenizer)
@@ -34,7 +34,7 @@ loss_fn = nn.BCEWithLogitsLoss()
 
 # Training Loop 
 best_val_acc = 0
-patience = 3
+patience = 7
 epochs_no_improve = 0
 num_epochs = 10
 
