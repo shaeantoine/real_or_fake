@@ -18,7 +18,7 @@ model.to(device)
 model.eval()
 
 # Initialize Model/ Architecture
-model_name = "roberta-large"
+model_name = "roberta-base"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 # Evaluation Loop

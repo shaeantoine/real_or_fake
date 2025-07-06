@@ -17,7 +17,7 @@ train_df = pd.read_csv(train_data)
 train_df, val_df = train_test_split(train_df, test_size=0.2, random_state=1)
 
 # Initialize Model/ Architecture
-model_name = "roberta-large"
+model_name = "roberta-base"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 train_dataset = TextPairDataset(train_df, tokenizer)
