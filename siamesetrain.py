@@ -35,23 +35,35 @@ model = SiameseNetwork()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
-# Freezing the model's encoder
+# Freeze the model
 for param in model.encoder.parameters():
     param.requires_grad = False 
 
-optimizer = AdamW(model.parameters(), lr=1e-4)
+# Unfreeze the top encoder layer's parameters
+for param in model.encoder.encoder.layer[-1].parameters():
+    param.requires_grad = True
+
+model.encoder
+
+# Unfreeze the classifier head's parameters
+for param in model.classifier.parameters():
+    param.requires_grad = True
+
+optimizer = AdamW([
+    {'params': model.classifier.parameters(), 'lr': 1e-4},
+    {'params': model.encoder.encoder.layer[-1].parameters(), 'lr': 2e-5}
+])
 class_prop = sum(train_df["real_file_label"] == 1)/sum(train_df["real_file_label"] == 2)
 pos_weight = torch.tensor([class_prop], dtype=torch.float).to(device)
-#loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 loss_fn = nn.BCEWithLogitsLoss()
 scheduler = ReduceLROnPlateau(optimizer, 'min', factor=0.1, patience=2)
 
 
 # Training Loop 
 best_val_acc = 0
-patience = 10
+patience = 15
 epochs_no_improve = 0
-num_epochs = 10
+num_epochs = 15
 
 for epoch in range(num_epochs):
     print(f"\nEpoch {epoch+1}/{num_epochs}")
