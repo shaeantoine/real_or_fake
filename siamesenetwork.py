@@ -17,11 +17,11 @@ class SiameseNetwork(nn.Module):
         )
 
     def forward(self, input_ids_1, attention_mask_1, input_ids_2, attention_mask_2):
-        rep1 = self.encoder(input_ids=input_ids_1, attention_mask=attention_mask_1).last_hidden_state[:, 0, :]
-        rep2 = self.encoder(input_ids=input_ids_2, attention_mask=attention_mask_2).last_hidden_state[:, 0, :]
+        outputs1 = self.encoder(input_ids=input_ids_1, attention_mask=attention_mask_1)
+        outputs2 = self.encoder(input_ids=input_ids_2, attention_mask=attention_mask_2)
+        rep1 = torch.mean(outputs1.last_hidden_state, dim=1)
+        rep2 = torch.mean(outputs2.last_hidden_state, dim=1)
 
-        rep1 = self.norm(rep1)
-        rep2 = self.norm(rep2)
         diff = torch.abs(rep1 - rep2)
         prod = rep1*rep2
         cos_sim = self.cos(rep1, rep2).unsqueeze(1)

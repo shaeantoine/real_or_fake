@@ -6,6 +6,7 @@ from transformers import AutoTokenizer
 from torch.utils.data import DataLoader
 from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 # Internal classes
 from siamesenetwork import SiameseNetwork
@@ -41,7 +42,10 @@ for param in model.encoder.parameters():
 optimizer = AdamW(model.parameters(), lr=1e-4)
 class_prop = sum(train_df["real_file_label"] == 1)/sum(train_df["real_file_label"] == 2)
 pos_weight = torch.tensor([class_prop], dtype=torch.float).to(device)
-loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+#loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+loss_fn = nn.BCEWithLogitsLoss()
+scheduler = ReduceLROnPlateau(optimizer, 'min', factor=0.1, patience=2, verbose=True)
+
 
 # Training Loop 
 best_val_acc = 0
@@ -115,6 +119,8 @@ for epoch in range(num_epochs):
     val_acc = val_correct / val_total
     avg_val_loss = val_loss / len(val_loader)
     val_f1 = f1_score(val_labels, val_preds)
+    
+    scheduler.step(avg_val_loss)
 
     print(f"Val   Loss: {avg_val_loss:.4f} | Acc: {val_acc:.4f} | F1: {val_f1:.4f}")
     print(f"\nPredicted labels of the validation set:\n{val_preds}\n")
