@@ -44,7 +44,7 @@ class_prop = sum(train_df["real_file_label"] == 1)/sum(train_df["real_file_label
 pos_weight = torch.tensor([class_prop], dtype=torch.float).to(device)
 #loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
 loss_fn = nn.BCEWithLogitsLoss()
-scheduler = ReduceLROnPlateau(optimizer, 'min', factor=0.1, patience=2, verbose=True)
+scheduler = ReduceLROnPlateau(optimizer, 'min', factor=0.1, patience=2)
 
 
 # Training Loop 
