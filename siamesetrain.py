@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch.optim import AdamW
 from transformers import AutoTokenizer
 from torch.utils.data import DataLoader
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import f1_score
 from sklearn.model_selection import train_test_split
 
 # Internal classes
@@ -34,10 +34,11 @@ model = SiameseNetwork()
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
-optimizer = AdamW([
-    {"params": model.encoder.parameters(), "lr": 1e-5},
-    {"params": model.classifier.parameters(), "lr": 1e-3},
-])
+# Freezing the model's encoder
+for param in model.encoder.parameters():
+    param.requires_grad = False 
+
+optimizer = AdamW(model.parameters(), lr=1e-4)
 class_prop = sum(train_df["real_file_label"] == 1)/sum(train_df["real_file_label"] == 2)
 pos_weight = torch.tensor([class_prop], dtype=torch.float).to(device)
 loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
