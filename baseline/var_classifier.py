@@ -16,7 +16,6 @@ class VarianceBasedClassifier:
     """
     Baseline classifier focusing on variance-based detection of fake texts
     """
-    
     def __init__(self):
         self.feature_extractor = VarianceFeatureExtractor()
         self.scaler = StandardScaler()
@@ -25,7 +24,7 @@ class VarianceBasedClassifier:
     
     def prepare_data(self, df):
         """Prepare training data with variance features"""
-        print("📊 Preparing training data...")
+        print("Preparing training data...")
         
         # Extract features
         feature_df = self.feature_extractor.extract_features_dataframe(df)

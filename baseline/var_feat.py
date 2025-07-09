@@ -22,7 +22,7 @@ class VarianceFeatureExtractor:
         text = str(text)
         features = {}
         
-        # === WORD-LEVEL VARIANCE ===
+        # Word level variance
         words = re.findall(r'\b\w+\b', text.lower())
         if len(words) > 1:
             word_lengths = [len(w) for w in words]
@@ -219,9 +219,9 @@ class VarianceFeatureExtractor:
     
     def extract_features_dataframe(self, df):
         """Extract features for entire dataframe"""
-        print("🔧 Extracting variance features...")
+        print("Extracting variance features")
         
-        # Ensure we have real_text and fake_text columns
+        # Generate real_text and fake_text columns
         if 'real_text' not in df.columns:
             df['real_text'] = df.apply(
                 lambda row: row['file_1'] if row['real_file_label'] == 1 else row['file_2'], 

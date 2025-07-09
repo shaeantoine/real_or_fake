@@ -3,7 +3,7 @@ from collections import Counter
 from var_classifier import VarianceBasedClassifier
 
 # Loading data into memory 
-data_file = "../data/train_df.csv"
+data_file = "data/train_df.csv"
 df = pd.read_csv(data_file)
 
 def run_baseline_experiment(df):
@@ -29,4 +29,4 @@ def run_baseline_experiment(df):
     
     return classifier, X, y, feature_df
 
-classifier, X, y, features = VarianceBasedClassifier.run_baseline_experiment(df)
+classifier, X, y, features = run_baseline_experiment(df)
