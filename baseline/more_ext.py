@@ -21,16 +21,13 @@ class EnhancedPairClassifier:
     Enhanced classifier that focuses on pair-wise differences
     Based on insight that ratios/differences work better than absolute features
     """
-    
     def __init__(self):
         self.scaler = StandardScaler()
         self.models = {}
         self.feature_names = []
         
     def extract_comprehensive_pair_features(self, df):
-        """Extract comprehensive pair-wise features"""
-        print("🔧 Extracting Enhanced Pair Features...")
-        
+        """Extract comprehensive pair-wise features"""        
         features_list = []
         
         for idx, row in df.iterrows():
@@ -268,19 +265,18 @@ class EnhancedPairClassifier:
         gb.fit(X_scaled, y)
         self.models['gradient_boosting'] = gb
         
-        # XGBoost if available
-        if XGBOOST_AVAILABLE:
-            xgb_model = xgb.XGBClassifier(
-                n_estimators=200,
-                max_depth=6,
-                learning_rate=0.1,
-                random_state=42,
-                scale_pos_weight=1
-            )
-            xgb_model.fit(X_scaled, y)
-            self.models['xgboost'] = xgb_model
+        # XGBoost
+        xgb_model = xgb.XGBClassifier(
+            n_estimators=200,
+            max_depth=6,
+            learning_rate=0.1,
+            random_state=42,
+            scale_pos_weight=1
+        )
+        xgb_model.fit(X_scaled, y)
+        self.models['xgboost'] = xgb_model
         
-        print(f"✅ Trained {len(self.models)} models")
+        print(f"Trained {len(self.models)} models")
         
     def evaluate_models(self, X, y):
         """Evaluate all models with cross-validation"""
@@ -352,10 +348,8 @@ class EnhancedPairClassifier:
         return predictions, probabilities
 
 def run_enhanced_experiment(df):
-    """Run the complete enhanced experiment"""
-    print("🚀 STARTING ENHANCED PAIR-WISE CLASSIFICATION")
+    print("ENHANCED PAIR-WISE CLASSIFICATION")
     print("=" * 60)
-    
     # Initialize classifier
     classifier = EnhancedPairClassifier()
     
@@ -377,12 +371,21 @@ def run_enhanced_experiment(df):
     # Show feature importance
     classifier.get_feature_importance()
     
-    print("\n✅ ENHANCED EXPERIMENT COMPLETE!")
-    print("=" * 60)
-    
     return classifier, features_df, y, results
 
 # Usage:
 data_file = "data/train_df.csv"
 df = pd.read_csv(data_file)
 classifier, features, labels, results = run_enhanced_experiment(df)
+
+test_data_file = "data/test_df.csv"
+test_df = pd.read_csv(test_data_file)
+
+predictions = []
+for idx, row in test_df.iterrows():
+    prediction = classifier.predict_which_is_real(row["file_1"], row["file_2"])[0]
+    predictions.append((idx, prediction["gradient_boosting"]))
+
+output_csv = "predictions_GB.csv"
+df_pred = pd.DataFrame(predictions)
+df_pred.to_csv(output_csv, index=False)
